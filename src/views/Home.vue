@@ -62,7 +62,10 @@
       </b-col>
     </b-row>
     <b-modal id="modal" title="Obavestenje" ok-only="">
-      <p class="my-4">Uspesno ste dodali osobu!</p>
+      <p class="my-4">Uspesno ste sacuvali osobu!</p>
+    </b-modal>
+    <b-modal id="modal-greska" title="Obavestenje" ok-only="">
+      <p class="my-4">Format unesenih vrednosti nije ispravan!</p>
     </b-modal>
     <b-modal id="model-delete" title="Obavestenje" ok-only="">
       <p class="my-4">Uspesno ste obrisali osobu!</p>
@@ -80,23 +83,23 @@ export default {
     return {
       form: {
         id: null,
-        ime: "asd",
-        prezime: "asd",
-        maticniBroj: "asd",
+        ime: "",
+        prezime: "",
+        maticniBroj: "",
         visina: "",
         tezina: "",
         bojaOciju: null,
-        telefon: "asd",
-        email: "aas@asd.com",
+        telefon: "",
+        email: "",
         rodjendan: "",
         prebivaliste: null,
         adresa: ""
       },
       bojeOciju: [
         { text: "Izaberite jedno", value: null },
-        "Plave",
-        "Zelene",
-        "Kestenjaste"
+        "plave",
+        "zelene",
+        "kestenjaste"
       ],
       prebivalista: [
         { text: "Izaberite jedno", value: null },
@@ -107,11 +110,7 @@ export default {
         "Sombor",
         "Smederevo"
       ],
-      items: [
-        {id: null, ime: "Pera", prezime: "Peric", maticniBroj: "1234567891234", visina: "180", tezina: "68", bojaOciju: "Zelene", 
-        telefon: "063.123.456", email: "pera@pera.com", rodjendan: "2020-02-02",
-        prebivaliste: "Beograd", adresa: "Jove Ilica"}
-      ],
+      items: [],
       columns: [
         { key: "id", label: "Id" },
         { key: "ime", label: "Ime" },
@@ -142,24 +141,43 @@ export default {
   methods: {
     sacuvajOsobu() {
       console.log(this.form);
+      var osoba = {
+        Id: this.form.id,
+        Ime: this.form.ime,
+        Prezime: this.form.prezime,
+        MaticniBroj: this.form.maticniBroj,
+        Visina: parseInt(this.form.visina),
+        Tezina: parseInt(this.form.tezina),
+        BojaOciju: this.form.bojaOciju,
+        Telefon: this.form.telefon,
+        Email: this.form.email,
+        Rodjendan: this.form.rodjendan,
+        Prebivaliste: this.form.prebivaliste,
+        Adresa: this.form.adresa
+      }
+      const headers = {
+        'Content-Type': 'application/json'
+      }
       if(this.form.id == null) {
-        axios.post("http://localhost:5000/osoba/dodajOsobu", this.form)
+        axios.post("http://localhost:5000/osoba/dodajOsobu", osoba, { headers : headers})
         .then(() => {
           this.$bvModal.show("modal");
           this.reset();
           this.vratiOsobe();
         })
         .catch(err => {
+          this.$bvModal.show("modal-greska");
           console.log(err);
         });
       } else {
-        axios.post("http://localhost:5000/osoba/izmeniOsobu", this.form)
+        axios.post("http://localhost:5000/osoba/izmeniOsobu", osoba, { headers : headers})
         .then(() => {
           this.$bvModal.show("modal");
           this.reset();
           this.vratiOsobe();
         })
         .catch(err => {
+          this.$bvModal.show("modal-greska");
           console.log(err);
         });
       }
@@ -169,21 +187,22 @@ export default {
       axios
         .get("http://localhost:5000/osoba/vratiOsobe")
         .then(res => {
+          res.data.forEach(this.formatDate);
           this.items = res.data;
         })
         .catch(() => {
         });
     },
-    obirsiOsobu(id) {
+    obrisiOsobu(id) {
       axios
-        .delete("http://localhost:5000/osoba/obirisiOsobu/" + id)
-        .then(res => {
+        .delete("http://localhost:5000/osoba/obrisiOsobu/" + id)
+        .then(() => {
           this.$bvModal.show("modal-delete"); 
           this.vratiOsobe();
         })
-        .catch(() => {
+        .catch(error => {
+          console.log(error);
         });
-      console.log(id);
     },
     reset() {
       document.getElementById("forma").reset();
@@ -204,13 +223,17 @@ export default {
     },
     izaberi(id) {
       axios
-        .post("http://localhost:5000/osoba/vratiOsobu/" + id)
+        .get("http://localhost:5000/osoba/vratiOsobu/" + id)
         .then(res => {
+          res.data.rodjendan = res.data.rodjendan.substring(0,10);
           this.form = res.data;
         })
-        .catch(() => {
+        .catch(error => {
+          console.log(error);
         });
-      console.log(id);
+    },
+    formatDate(item) {
+      item.rodjendan = item.rodjendan.substring(0,10);
     }
   }
 };
